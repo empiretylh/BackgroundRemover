@@ -1,12 +1,12 @@
 import cv2
 import cvzone
 from cvzone.SelfiSegmentationModule import SelfiSegmentation 
-
+import numpy as np
 # Load the input image
 imgread = cv2.imread('img.jpg')
 
 segmentor = SelfiSegmentation()
-img = segmentor.removeBG(imgread,(255,0,0),threshold=0.9)
+img = segmentor.removeBG(imgread,(255,0,0),threshold=0.7)
 
 # Convert the image to grayscale
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -44,8 +44,23 @@ if len(faces) > 0:
 
     # Crop the image
     crop_img = img[crop_y:crop_y+crop_height+margin_y*2, crop_x:crop_x+crop_width+margin_x*2]
-    cv2.imwrite('crop.jpg',crop_img)
+   
+    # Resize the cropped image to the desired size
+    resize_img = cv2.resize(crop_img, (int(210/3), int(297/3)), interpolation = cv2.INTER_AREA)
     
+    # Add border to the resized image to create a margin
+    margin = 30
+    bordered_img = cv2.copyMakeBorder(resize_img, margin, margin, margin, margin, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+    
+    # Add the six cropped images to an A4 sheet
+    a4_sheet = np.zeros((int(297), int(210), 3), np.uint8)
+    for i in range(2):
+        for j in range(3):
+            x_offset = j * (bordered_img.shape[1] + 20) + 20
+            y_offset = i * (bordered_img.shape[0] + 20) + 20
+            a4_sheet[y_offset:y_offset+bordered_img.shape[0], x_offset:x_offset+bordered_img.shape[1]] = bordered_img
+            
+    cv2.imwrite('output.jpg',a4_sheet)
     
 
 # Close all windows
